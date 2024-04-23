@@ -95,7 +95,6 @@ void ServerCore::handlingAccept() {
                 {
                     send(new_client->command_socket, SUCCESSFUL_QUIT, strlen(SUCCESSFUL_QUIT), 0);
                     new_client->disconnect();
-
                     break;
                 }
                 else
@@ -164,7 +163,6 @@ void ServerClient::authorize() {
         {
             send(command_socket, SUCCESSFUL_QUIT, strlen(SUCCESSFUL_QUIT), 0);
             disconnect();
-            free(this);
             break;
         }
         else if (strcmp(buffer, "USER") == 0)
@@ -207,7 +205,6 @@ void ServerClient::authorize() {
         {
             send(command_socket, SUCCESSFUL_QUIT, strlen(SUCCESSFUL_QUIT), 0);
             disconnect();
-            free(this);
             break;
         }
         else if (strcmp(buffer, "PASS") == 0)
@@ -254,7 +251,7 @@ void ServerClient::authorize() {
 size_t ServerClient::get_data_from_client(char *buffer) {
 
     timeval tv_recv{};
-    tv_recv.tv_sec = 1;
+    tv_recv.tv_sec = 3;
     tv_recv.tv_usec = 0;
     setsockopt(data_socket, SOL_SOCKET, SO_RCVTIMEO, &tv_recv, sizeof(tv_recv));
 

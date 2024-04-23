@@ -306,7 +306,7 @@ void retr_command(const char* command, char* buff, const int& command_socket, co
     std::string path_to_file = std::string(PATH_TO_DOWNLOADS) + "/" + buff;
 
     timeval tv_recv{};
-    tv_recv.tv_sec = 1;
+    tv_recv.tv_sec = 3;
     tv_recv.tv_usec = 0;
     setsockopt(data_socket, SOL_SOCKET, SO_RCVTIMEO, &tv_recv, sizeof(tv_recv));
 
