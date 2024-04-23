@@ -1,0 +1,17 @@
+{
+  "serverPort": 8089,
+  "localIpAddress": "192.168.1.105",
+  "users": [
+    {
+      "user": "Ivan",
+      "password": "1234"
+    },
+    {
+      "user": "Ruslan",
+      "password": "Penis"
+    }
+  ],
+  "files": [
+    "config.json"
+  ]
+}

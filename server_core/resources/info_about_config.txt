@@ -1,0 +1,15 @@
+   This configuration file must be located strictly in the following
+directory so that the server application folder correctly
+retrieves data from this JSON file. If you want to change the location
+of this folder, you should go to server_core/include/ServerCore.h
+and change the PATH_TO_JSON constant. The same situation is with the
+client, only the path changes in client_run/client.cpp.
+
+Required configuration for the client:
+    serverPort
+    localIpAddress
+
+Required configuration for the server:
+    serverPort
+    localIpAddress
+    users
