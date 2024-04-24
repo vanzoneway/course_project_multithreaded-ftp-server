@@ -93,8 +93,11 @@ void ServerCore::handlingAccept() {
                 valread = new_client->get_command_from_client(buffer);
                 if (strcmp(buffer, "QUIT") == 0 || valread == -1 || valread == 0)
                 {
-                    send(new_client->command_socket, SUCCESSFUL_QUIT, strlen(SUCCESSFUL_QUIT), 0);
-                    new_client->disconnect();
+                    if(new_client->is_authorized) {
+                        send(new_client->command_socket, SUCCESSFUL_QUIT, strlen(SUCCESSFUL_QUIT), 0);
+                        new_client->disconnect();
+                    }
+
                     break;
                 }
                 else
@@ -163,6 +166,8 @@ void ServerClient::authorize() {
         {
             send(command_socket, SUCCESSFUL_QUIT, strlen(SUCCESSFUL_QUIT), 0);
             disconnect();
+            free(this);
+            is_password = true;
             break;
         }
         else if (strcmp(buffer, "USER") == 0)
@@ -205,6 +210,7 @@ void ServerClient::authorize() {
         {
             send(command_socket, SUCCESSFUL_QUIT, strlen(SUCCESSFUL_QUIT), 0);
             disconnect();
+            free(this);
             break;
         }
         else if (strcmp(buffer, "PASS") == 0)
@@ -251,7 +257,7 @@ void ServerClient::authorize() {
 size_t ServerClient::get_data_from_client(char *buffer) {
 
     timeval tv_recv{};
-    tv_recv.tv_sec = 3;
+    tv_recv.tv_sec = 1;
     tv_recv.tv_usec = 0;
     setsockopt(data_socket, SOL_SOCKET, SO_RCVTIMEO, &tv_recv, sizeof(tv_recv));
 
