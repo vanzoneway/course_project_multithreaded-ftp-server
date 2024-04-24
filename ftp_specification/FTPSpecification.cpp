@@ -1,9 +1,6 @@
-#include <filesystem>
-#include <fstream>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include "FTPSpecification.h"
 
+std::mutex FTPSpecification::retr_mutex;
 
 void FTPSpecification::handler(char* command , int fcs, int fds) {
 
@@ -14,7 +11,10 @@ void FTPSpecification::handler(char* command , int fcs, int fds) {
     }else if(strcmp(command, CWD_COMMAND) == 0) {
         cwd_handler(fcs, fds);
     }else if(strcmp(command, DOWNLOAD_COMMAND) == 0) {
-        retr_handler(fcs, fds);
+        {
+            std::lock_guard<std::mutex> lock(retr_mutex);
+            retr_handler(fcs, fds);
+        }
     }else
     {
         send(fcs, BAD_SEQUENCE_OF_COMMANDS, strlen(BAD_SEQUENCE_OF_COMMANDS), 0);
@@ -114,6 +114,7 @@ std::string FTPSpecification::parse_current_dir() {
 void FTPSpecification::cwd_handler(int fcs, int fds) {
     char buff[1024];
     ssize_t valread;
+    std::string old_current_dir = current_dir;
 
     int bytes_available;
     ioctl(fds, FIONREAD, &bytes_available);
@@ -125,6 +126,12 @@ void FTPSpecification::cwd_handler(int fcs, int fds) {
     buff[valread] = '\0';
     std::cout << "\033[1;34mCWD command:\033[0m " << buff << get_client_info(fcs) << std::endl;
 
+
+    if (chdir(old_current_dir.c_str()) == -1) {
+        send(fcs, INVALID_PATH, strlen(INVALID_PATH), 0);
+        return;
+    }
+
     struct stat statbuf{};
     if (stat(buff, &statbuf) == -1) {
         send(fcs, INVALID_PATH, strlen(INVALID_PATH), 0);
@@ -135,8 +142,15 @@ void FTPSpecification::cwd_handler(int fcs, int fds) {
         send(fcs, INVALID_PATH, strlen(INVALID_PATH), 0);
         return;
     }
+    current_dir = std::filesystem::current_path();
 
-    send(fds, buff, strlen(buff), 0);
+    if (chdir(baser_dir.c_str()) == -1) {
+        send(fcs, INVALID_PATH, strlen(INVALID_PATH), 0);
+        return;
+    }
+
+
+    send(fds, current_dir.c_str(), strlen(current_dir.c_str()), 0);
     send(fcs, SUCCESSFUL_CHANGE, strlen(SUCCESSFUL_CHANGE), 0);
 }
 
@@ -144,29 +158,30 @@ void FTPSpecification::retr_handler(int fcs, int fds) {
     char buff[BUFFER_SIZE];
     ssize_t valread;
     int size_of_file;
+    std::string path_to_file;
 
     valread = recv(fds, buff, sizeof(buff), 0);
     buff[valread] = '\0';
+    path_to_file = current_dir + "/" + buff;
     std::cout << "\033[1;34mRETR command:\033[0m " << buff << get_client_info(fcs) << std::endl;
 
-
-    if (!std::filesystem::exists(buff)) {
+    if (!std::filesystem::exists(path_to_file)) {
         send(fcs, FILE_UNAVAILABLE, strlen(FILE_UNAVAILABLE), 0);
         return;
     }
-    if (!std::filesystem::is_regular_file(buff)) {
+    if (!std::filesystem::is_regular_file(path_to_file)) {
         send(fcs, FILE_UNAVAILABLE, strlen(FILE_UNAVAILABLE), 0);
         return;
     }
     
-    std::ifstream file(buff, std::ios::binary);
+    std::ifstream file(path_to_file, std::ios::binary);
 
     if(!file.is_open()) {
         send(fcs, FILE_UNAVAILABLE, strlen(FILE_UNAVAILABLE), 0);
         return;
     }
 
-    size_of_file = std::filesystem::file_size(buff);
+    size_of_file = std::filesystem::file_size(path_to_file);
 
     send(fcs,DONE_SUCCESSFULLY, strlen(DONE_SUCCESSFULLY), 0);
 
@@ -216,6 +231,20 @@ std::string FTPSpecification::get_client_info(int fcs) {
     result.append(std::to_string(ntohs(address.sin_port)));
     result.append("\033[0m");
     return result;
+}
+
+std::vector<std::string> FTPSpecification::split_path(const std::string &path_string) {
+    std::vector<std::string> commands;
+    std::istringstream iss(path_string);
+    std::string token;
+
+    while (std::getline(iss, token, '/')) {
+        if (!token.empty()) {
+            commands.push_back(token);
+        }
+    }
+
+    return commands;
 }
 
 

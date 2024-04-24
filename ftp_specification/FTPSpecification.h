@@ -8,6 +8,13 @@
 #include <sys/stat.h>
 #include <csignal>
 
+#include <filesystem>
+#include <fstream>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <vector>
+#include <mutex>
+
 
 #define LIST_COMMAND "LIST"
 #define CWD_COMMAND "CWD"
@@ -57,6 +64,8 @@ class FTPSpecification {
 
 private:
      std::string current_dir = ".";
+     std::string baser_dir = std::filesystem::current_path();
+     static std::mutex retr_mutex;
 
 public:
     void handler(char command[], int fcs, int fds);
@@ -70,6 +79,7 @@ private:
     void clear_socket_data(int socket_fd);
     std::string parse_current_dir();
     std::string get_client_info(int fcs);
+    std::vector<std::string> split_path(const std::string& path_string);
 
 };
 

@@ -1,5 +1,8 @@
 #include "../include/ServerCore.h"
 
+///NOTE IF YOU WANT TO CHANGE DIRECTORY AND AFTER THAT CONNECT FROM ANOTHER CLIENT
+///YOU HAVE TO GO BACK TO HOME DIRECTORY BECAUSE JSON CHDIR CHANGES DIRECTORY
+///AND MAKE CWD COMMAND PROPERLY ( use path in class )
 
 /**
 
@@ -156,11 +159,14 @@ void ServerClient::authorize() {
     size_t valread;
     bool is_login = false;
     bool is_password = false;
+    std::string json = Json_Reader::get_json(PATH_TO_JSON);
     std::string login_name;
 
 
 
+
     while(!is_login) {
+        memset(buffer, 0, sizeof(buffer));
         valread = get_command_from_client(buffer);
         if (strcmp(buffer, "QUIT") == 0 || valread == -1 || valread == 0)
         {
@@ -179,7 +185,6 @@ void ServerClient::authorize() {
                 clear_socket_data(data_socket);
                 continue;
             }
-            std::string json = Json_Reader::get_json(PATH_TO_JSON);
             std::vector<std::string> json_vector = Json_Reader::split_array(Json_Reader::find_value(json, "users"));
             std::string name;
             for (const auto &user_info: json_vector) {
@@ -205,6 +210,7 @@ void ServerClient::authorize() {
     }
 
     while(!is_password) {
+        memset(buffer, 0, sizeof(buffer));
         valread = get_command_from_client(buffer);
         if (strcmp(buffer, "QUIT") == 0 || valread == -1 || valread == 0)
         {
@@ -221,7 +227,6 @@ void ServerClient::authorize() {
                 clear_socket_data(data_socket);
                 continue;
             }
-            std::string json = Json_Reader::get_json(PATH_TO_JSON);
             std::vector<std::string> json_vector = Json_Reader::split_array(Json_Reader::find_value(json, "users"));
             std::string password;
             std::string name;
